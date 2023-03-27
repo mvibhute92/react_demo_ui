@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 // @mui
 import { Link, Stack, IconButton, InputAdornment, TextField, Checkbox } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
-import Axios, { AxiosResponse } from 'axios';
+import Axios from 'axios';
 // components
 import Iconify from '../../../components/iconify';
 
@@ -31,6 +31,9 @@ const [showPassword, setShowPassword] = useState(false);
           const response = await Axios.post('http://localhost:5000/login', {'email': email, 'password': password});
          
         if(response.status === 200){
+          sessionStorage.setItem('userData',JSON.stringify(response.data.data.email));
+          const userName = response.data.data.email.split("@", 1);
+          sessionStorage.setItem('username',userName[0]);
           navigate('/dashboard/app', { replace: true });
         }
       }catch(error) {

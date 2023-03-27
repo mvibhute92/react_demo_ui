@@ -3,13 +3,11 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 // @mui
 import { styled, alpha } from '@mui/material/styles';
-import { Box, Link, Button, Drawer, Typography, Avatar, Stack } from '@mui/material';
-// mock
-import account from '../../../_mock/account';
+import { Box, Link, Drawer, Typography, Avatar } from '@mui/material';
+
 // hooks
 import useResponsive from '../../../hooks/useResponsive';
-// components
-import Logo from '../../../components/logo';
+
 import Scrollbar from '../../../components/scrollbar';
 import NavSection from '../../../components/nav-section';
 //
@@ -36,6 +34,7 @@ Nav.propTypes = {
 
 export default function Nav({ openNav, onCloseNav }) {
   const { pathname } = useLocation();
+  const userName = sessionStorage.getItem('username');
 
   const isDesktop = useResponsive('up', 'lg');
 
@@ -53,21 +52,13 @@ export default function Nav({ openNav, onCloseNav }) {
         '& .simplebar-content': { height: 1, display: 'flex', flexDirection: 'column' },
       }}
     >
-      
-
-      <Box sx={{ mb: 5, mx: 2.5 , mt: 15}}>
+      <Box sx={{ mb: 5, mx: 2.5, mt: 15 }}>
         <Link underline="none">
           <StyledAccount>
-            <Avatar src={account.photoURL} alt="photoURL" />
+            <Avatar src='/assets/images/avatars/avatar_default.jpg' alt="photoURL" />
 
             <Box sx={{ ml: 2 }}>
-              <Typography variant="subtitle2" sx={{ color: 'text.primary' }}>
-                {account.displayName}
-              </Typography>
-
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {account.role}
-              </Typography>
+              <Typography variant="subtitle2" sx={{ color: 'text.primary' }}>{userName.toUpperCase()} </Typography>
             </Box>
           </StyledAccount>
         </Link>
@@ -76,8 +67,6 @@ export default function Nav({ openNav, onCloseNav }) {
       <NavSection data={navConfig} />
 
       <Box sx={{ flexGrow: 1 }} />
-
-      
     </Scrollbar>
   );
 

@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { filter } from 'lodash';
 import { sentenceCase } from 'change-case';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 // @mui
 import {
   Card,
@@ -22,6 +22,7 @@ import {
   TableContainer,
   TablePagination,
 } from '@mui/material';
+import Axios from 'axios';
 // components
 import Label from '../components/label';
 import Iconify from '../components/iconify';
@@ -34,11 +35,15 @@ import USERLIST from '../_mock/user';
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'name', label: 'Name', alignRight: false },
-  { id: 'company', label: 'Company', alignRight: false },
+  { id: 'companyid', label: 'Company Id', alignRight: false },
+  { id: 'firstname', label: 'First Name', alignRight: false },
+  { id: 'lastname', label: 'Last Name', alignRight: false },
+  { id: 'companyname', label: 'Company Name', alignRight: false },
   { id: 'role', label: 'Role', alignRight: false },
-  { id: 'isVerified', label: 'Verified', alignRight: false },
-  { id: 'status', label: 'Status', alignRight: false },
+  { id: 'experience', label: 'Experience', alignRight: false },
+  { id: 'about', label: 'Gender', alignRight: false },
+  { id: 'mobile', label: 'Mobile No', alignRight: false },
+  { id: 'email', label: 'Email', alignRight: false },
   { id: '' },
 ];
 
@@ -68,7 +73,7 @@ function applySortFilter(array, comparator, query) {
     return a[1] - b[1];
   });
   if (query) {
-    return filter(array, (_user) => _user.name.toLowerCase().indexOf(query.toLowerCase()) !== -1);
+    return filter(array, (_user) => _user.firstname.toLowerCase().indexOf(query.toLowerCase()) !== -1);
   }
   return stabilizedThis.map((el) => el[0]);
 }
@@ -88,6 +93,27 @@ export default function UserPage() {
 
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  const [userDetail, setUserDetail] = useState([]);
+
+
+  useEffect(() => {
+    const getUsers = async () => {
+      const response = await Axios.get('http://localhost:5000/getuserdata');
+      console.log(response);
+      if(response.status === 200){
+         setUserDetail(response.data.userDetails);
+         console.log(userDetail);
+      } else {
+        setUserDetail([]);
+      }
+      
+  };
+  
+    getUsers(); 
+}, []);
+
+
+
   const handleOpenMenu = (event) => {
     setOpen(event.currentTarget);
   };
@@ -104,7 +130,7 @@ export default function UserPage() {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = USERLIST.map((n) => n.name);
+      const newSelecteds = userDetail.map((n) => n.companyid);
       setSelected(newSelecteds);
       return;
     }
@@ -136,13 +162,13 @@ export default function UserPage() {
   };
 
   const handleFilterByName = (event) => {
-    setPage(0);
+   // setPage(0);
     setFilterName(event.target.value);
   };
 
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - USERLIST.length) : 0;
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - userDetail.length) : 0;
 
-  const filteredUsers = applySortFilter(USERLIST, getComparator(order, orderBy), filterName);
+  const filteredUsers = applySortFilter(userDetail, getComparator(order, orderBy), filterName);
 
   const isNotFound = !filteredUsers.length && !!filterName;
 
@@ -172,42 +198,54 @@ export default function UserPage() {
                   order={order}
                   orderBy={orderBy}
                   headLabel={TABLE_HEAD}
-                  rowCount={USERLIST.length}
+                  rowCount={userDetail.length}
                   numSelected={selected.length}
                   onRequestSort={handleRequestSort}
                   onSelectAllClick={handleSelectAllClick}
                 />
                 <TableBody>
-                  {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                    const { id, name, role, status, company, avatarUrl, isVerified } = row;
-                    const selectedUser = selected.indexOf(name) !== -1;
+                  {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => {
+                    const { companyid, firstname, lastname, companyname, role, experience, about, mobile, email } = row;
+                    const selectedUser = selected.indexOf(companyid) !== -1;
 
                     return (
-                      <TableRow hover key={id} tabIndex={-1} role="checkbox" selected={selectedUser}>
+                      <TableRow hover key={index} tabIndex={-1} role="checkbox" selected={selectedUser}>
                         <TableCell padding="checkbox">
-                          <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, name)} />
+                          <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, companyid)} />
                         </TableCell>
 
                         <TableCell component="th" scope="row" padding="none">
                           <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar alt={name} src={avatarUrl} />
+                            <Avatar alt={companyid} src={USERLIST[index].avatarUrl} />
                             <Typography variant="subtitle2" noWrap>
-                              {name}
+                              {companyid}
                             </Typography>
                           </Stack>
                         </TableCell>
 
-                        <TableCell align="left">{company}</TableCell>
+                        <TableCell align="left">{firstname}</TableCell>
 
-                        <TableCell align="left">{role}</TableCell>
+                        <TableCell align="left">{lastname}</TableCell>
 
-                        <TableCell align="left">{isVerified ? 'Yes' : 'No'}</TableCell>
+                        <TableCell align="left">{companyname}</TableCell>
 
                         <TableCell align="left">
-                          <Label color={(status === 'banned' && 'error') || 'success'}>{sentenceCase(status)}</Label>
+                          {role}
                         </TableCell>
-
-                        <TableCell align="right">
+                        <TableCell align="left">
+                          {experience}
+                        </TableCell>
+                        <TableCell align="left">
+                          {about}
+                        </TableCell>
+                        <TableCell align="left">
+                          {mobile}
+                        </TableCell>
+                        <TableCell align="left">
+                        {email}
+                        </TableCell>
+                       
+                        <TableCell align="right" style={{paddingLeft: '0px !important'}}>
                           <IconButton size="large" color="inherit" onClick={handleOpenMenu}>
                             <Iconify icon={'eva:more-vertical-fill'} />
                           </IconButton>
@@ -252,7 +290,7 @@ export default function UserPage() {
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
-            count={USERLIST.length}
+            count={userDetail.length}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}

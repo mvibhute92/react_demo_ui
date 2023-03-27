@@ -33,12 +33,12 @@ export default function Router() {
       children: [
        
         { path: '404', element: <Page404 /> },
-        { path: '*', element: <Navigate to="/login" /> },
+        // { path: '*', element: <Navigate to="/login" /> },
       ],
     },
     {
       path: '*',
-      element: <Navigate to="/login" replace />,
+      element: <Navigate to="/login"  />,
     },
   ]);
 
