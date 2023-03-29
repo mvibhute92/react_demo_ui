@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { filter } from 'lodash';
 import { sentenceCase } from 'change-case';
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect, FormEvent } from 'react';
 // @mui
 import {
   Card,
@@ -21,7 +21,17 @@ import {
   IconButton,
   TableContainer,
   TablePagination,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  TextField,
+  Grid,
+  InputLabel,
+  FormControl,
 } from '@mui/material';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Axios from 'axios';
 // components
 import Label from '../components/label';
@@ -95,24 +105,37 @@ export default function UserPage() {
 
   const [userDetail, setUserDetail] = useState([]);
 
+  const [newUserDialog, setNewUserDialog] = useState(false);
+
+  const [newUserData, setNewUserData] = useState([]);
+
+  const [gender, setGender] = useState();
+
+  const [formData, setFormData] = useState({
+    firstname: '',
+    lastname: '',
+    companyname: '',
+    role: '',
+    experience: '',
+    about: '',
+    mobile: '',
+    email: '',
+  });
 
   useEffect(() => {
     const getUsers = async () => {
       const response = await Axios.get('http://localhost:5000/getuserdata');
       console.log(response);
-      if(response.status === 200){
-         setUserDetail(response.data.userDetails);
-         console.log(userDetail);
+      if (response.status === 200) {
+        setUserDetail(response.data.userDetails);
+        console.log(userDetail);
       } else {
         setUserDetail([]);
       }
-      
-  };
-  
-    getUsers(); 
-}, []);
+    };
 
-
+    getUsers();
+  }, []);
 
   const handleOpenMenu = (event) => {
     setOpen(event.currentTarget);
@@ -120,6 +143,10 @@ export default function UserPage() {
 
   const handleCloseMenu = () => {
     setOpen(null);
+  };
+
+  const handleClose = () => {
+    setNewUserDialog(false);
   };
 
   const handleRequestSort = (event, property) => {
@@ -162,10 +189,38 @@ export default function UserPage() {
   };
 
   const handleFilterByName = (event) => {
-   // setPage(0);
+    // setPage(0);
     setFilterName(event.target.value);
   };
 
+  const inputChangeHandler = (e) => {
+    if(e.target.id === undefined){
+      console.log(e.target);
+      
+    
+      const { name, value } = e.target;
+      setGender(e.target.value);
+      console.log(gender);
+      setFormData((formData) => ({ ...formData, [name]: value }));
+    
+      console.log(formData);
+    } else {
+      const { id, value } = e.target;
+      setFormData((formData) => ({ ...formData, [id]: value }));
+      console.log(formData);
+    }
+    
+    
+    
+  };
+
+  const submitHandler = (data) => {
+    // setNewUserData(JSON.stringify(data));
+  };
+
+  const handleGenderChange = (event) => {
+    setGender(event.target.value);
+  };
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - userDetail.length) : 0;
 
   const filteredUsers = applySortFilter(userDetail, getComparator(order, orderBy), filterName);
@@ -183,7 +238,11 @@ export default function UserPage() {
           <Typography variant="h4" gutterBottom>
             User
           </Typography>
-          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />}>
+          <Button
+            variant="contained"
+            startIcon={<Iconify icon="eva:plus-fill" />}
+            onClick={() =>{setNewUserDialog(true); setFormData({}); setGender('')} }
+          >
             New User
           </Button>
         </Stack>
@@ -229,23 +288,13 @@ export default function UserPage() {
 
                         <TableCell align="left">{companyname}</TableCell>
 
-                        <TableCell align="left">
-                          {role}
-                        </TableCell>
-                        <TableCell align="left">
-                          {experience}
-                        </TableCell>
-                        <TableCell align="left">
-                          {about}
-                        </TableCell>
-                        <TableCell align="left">
-                          {mobile}
-                        </TableCell>
-                        <TableCell align="left">
-                        {email}
-                        </TableCell>
-                       
-                        <TableCell align="right" style={{paddingLeft: '0px !important'}}>
+                        <TableCell align="left">{role}</TableCell>
+                        <TableCell align="left">{experience}</TableCell>
+                        <TableCell align="left">{about}</TableCell>
+                        <TableCell align="left">{mobile}</TableCell>
+                        <TableCell align="left">{email}</TableCell>
+
+                        <TableCell align="right" style={{ paddingLeft: '0px !important' }}>
                           <IconButton size="large" color="inherit" onClick={handleOpenMenu}>
                             <Iconify icon={'eva:more-vertical-fill'} />
                           </IconButton>
@@ -327,6 +376,141 @@ export default function UserPage() {
           Delete
         </MenuItem>
       </Popover>
+
+      <Dialog open={newUserDialog} onClose={handleClose}>
+        <DialogTitle>Add New User</DialogTitle>
+        <DialogContent>
+          <form onSubmit={submitHandler}>
+            <Grid container spacing={2}>
+              <Grid item xs={6} md={6}>
+                <FormControl variant="standard">
+                  <TextField
+                    autoFocus
+                    margin="dense"
+                    id="firstname"
+                    label="First Name*"
+                    type="text"
+                    fullWidth
+                    variant="standard"
+                    value={formData.firstname}
+                    onChange={inputChangeHandler}
+                  />
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={6} md={6}>
+                <FormControl variant="standard">
+                  <TextField
+                    autoFocus
+                    margin="dense"
+                    id="lastname"
+                    label="Last Name*"
+                    type="text"
+                    fullWidth
+                    variant="standard"
+                    value={formData.lastname}
+                    onChange={inputChangeHandler}
+                  />
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={6}>
+                <FormControl variant="standard">
+                  <TextField
+                    autoFocus
+                    margin="dense"
+                    id="companyname"
+                    label="Company Name*"
+                    type="text"
+                    fullWidth
+                    variant="standard"
+                    value={formData.companyname}
+                    onChange={inputChangeHandler}
+                  />
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={6}>
+                <FormControl variant="standard">
+                  <TextField
+                    autoFocus
+                    margin="dense"
+                    id="role"
+                    label="Role*"
+                    type="text"
+                    fullWidth
+                    variant="standard"
+                    value={formData.role}
+                    onChange={inputChangeHandler}
+                  />
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={6}>
+                <FormControl variant="standard">
+                  <TextField
+                    autoFocus
+                    margin="dense"
+                    id="experience"
+                    label="Experience*"
+                    type="text"
+                    fullWidth
+                    variant="standard"
+                    value={formData.experience}
+                    onChange={inputChangeHandler}
+                  />
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={6}>
+                <FormControl variant="standard" sx={{ m: 1, minWidth: '88%' }}>
+                  <InputLabel id="demo-simple-select-standard-label">Gender*</InputLabel>
+                  <Select
+                    labelId="demo-simple-select-standard-label"
+                    id='about'
+                    name="about"
+                    value={gender}
+                    onChange={inputChangeHandler}
+                    label="Gender*"
+                    variant="standard"
+                  >
+                    <MenuItem value={'M'}>M</MenuItem>
+                    <MenuItem value={'F'}>F</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={6}>
+                <TextField
+                  autoFocus
+                  margin="dense"
+                  id="mobile"
+                  label="Mobile No.*"
+                  type="text"
+                  fullWidth
+                  variant="standard"
+                  value={formData.mobile}
+                  onChange={inputChangeHandler}
+                />
+              </Grid>
+              <Grid item xs={6} md={6}>
+                <FormControl variant="standard">
+                  <TextField
+                    autoFocus
+                    margin="dense"
+                    id="email"
+                    label="Email*"
+                    type="email"
+                    fullWidth
+                    variant="standard"
+                    value={formData.email}
+                    onChange={inputChangeHandler}
+                  />
+                </FormControl>
+              </Grid>
+            </Grid>
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button type="submit">Save User</Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
