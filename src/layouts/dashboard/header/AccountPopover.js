@@ -12,8 +12,8 @@ export default function AccountPopover() {
   const [open, setOpen] = useState(null);
   const navigate = useNavigate();
   const userName = sessionStorage.getItem('username');
-  const userEmail = sessionStorage.getItem('userData');
-
+  const userData = JSON.parse(sessionStorage.getItem('userData'));
+  
   const handleOpen = (event) => {
     setOpen(event.currentTarget);
   };
@@ -21,6 +21,8 @@ export default function AccountPopover() {
   const handleClose = () => {
     setOpen(null);
     navigate('/login', { replace: true });
+    sessionStorage.removeItem('userData')
+
   };
 
   return (
@@ -66,7 +68,7 @@ export default function AccountPopover() {
       >
         <Box sx={{ my: 1.5, px: 2.5 }}>
           <Typography variant="subtitle2" noWrap>{userName.toUpperCase()}</Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>{userEmail}</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>{userData.data?.email}</Typography>
         </Box>
 
         <Divider sx={{ borderStyle: 'dashed' }} />

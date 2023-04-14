@@ -30,6 +30,9 @@ import {
   Grid,
   InputLabel,
   FormControl,
+  Snackbar,
+  Alert,
+  Menu,
 } from '@mui/material';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Axios from 'axios';
@@ -41,6 +44,8 @@ import Scrollbar from '../components/scrollbar';
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
 // mock
 import USERLIST from '../_mock/user';
+
+import authHeader from '../constants/auth';
 
 // ----------------------------------------------------------------------
 
@@ -54,7 +59,7 @@ const TABLE_HEAD = [
   { id: 'about', label: 'Gender', alignRight: false },
   { id: 'mobile', label: 'Mobile No', alignRight: false },
   { id: 'email', label: 'Email', alignRight: false },
-  { id: '' },
+  { id: '_id' },
 ];
 
 // ----------------------------------------------------------------------
@@ -109,7 +114,15 @@ export default function UserPage() {
 
   const [newUserData, setNewUserData] = useState([]);
 
-  const [gender, setGender] = useState();
+  const [gender, setGender] = useState('');
+
+  const [showSnack, setShowSnack] = useState(false);
+
+  const [seletedRow, setSelectedRow] = useState({});
+
+  const [deleteMultipleIds, setdeleteMultipleIds] = useState([]);
+
+
 
   const [formData, setFormData] = useState({
     firstname: '',
@@ -118,26 +131,73 @@ export default function UserPage() {
     role: '',
     experience: '',
     about: '',
+    companyid: '',
     mobile: '',
     email: '',
   });
 
   useEffect(() => {
-    const getUsers = async () => {
-      const response = await Axios.get('http://localhost:5000/getuserdata');
-      console.log(response);
-      if (response.status === 200) {
-        setUserDetail(response.data.userDetails);
-        console.log(userDetail);
-      } else {
-        setUserDetail([]);
-      }
-    };
-
     getUsers();
   }, []);
+  useEffect(() => {
+    
+  }, [deleteMultipleIds])
+  const handleUserDelete = () => {
+    deleteUser();
+    setOpen(null);
+  };
+  const handleUserEdit = () => {
+    setNewUserDialog(true);
+    const obj = { ...seletedRow };
+    delete obj._id;
+    setFormData(obj);
+    setGender(seletedRow.about);
+    setOpen(null);
+  };
 
-  const handleOpenMenu = (event) => {
+  const deleteUser = async () => {
+    // api
+    const response = await Axios.delete(`http://localhost:5000/delete/${seletedRow._id}`, { headers: authHeader() });
+    console.log(response);
+    if (response.status === 200) {
+      console.log(response);
+      getUsers();
+    }
+  };
+const deleteMultiple = async () => {
+  const response = await Axios.post(`http://localhost:5000/deletemultiple`,{...deleteMultipleIds},  { headers: authHeader() });
+  console.log(response);
+  if (response.status === 200) {
+    setSelected([]);
+    console.log(response);
+    getUsers();
+  }
+};
+  const editUser = async () => {
+    const response = await Axios.put(`http://localhost:5000/edituser/${seletedRow._id}`, formData, {
+      headers: authHeader(),
+    });
+    console.log(response);
+    if (response.status === 200) {
+      setNewUserDialog(true);
+      console.log(response);
+      getUsers();
+    }
+  };
+  const getUsers = async () => {
+    const response = await Axios.get('http://localhost:5000/getuserdata', { headers: authHeader() });
+
+    if (response.status === 200) {
+      setUserDetail(response.data.userDetails);
+    } else {
+      setUserDetail([]);
+    }
+  };
+  const handleMultipleDelete = async () => {
+    deleteMultiple();
+  }
+  const handleOpenMenu = (row) => (event) => {
+    setSelectedRow(row);
     setOpen(event.currentTarget);
   };
 
@@ -164,7 +224,11 @@ export default function UserPage() {
     setSelected([]);
   };
 
-  const handleClick = (event, name) => {
+  const handleClick = (event, name, _id) => {
+    console.log(_id);
+    const idArray = [...deleteMultipleIds, _id];
+    console.log(idArray);
+    setdeleteMultipleIds(idArray)
     const selectedIndex = selected.indexOf(name);
     let newSelected = [];
     if (selectedIndex === -1) {
@@ -177,6 +241,7 @@ export default function UserPage() {
       newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
     }
     setSelected(newSelected);
+    console.log(deleteMultipleIds);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -194,33 +259,53 @@ export default function UserPage() {
   };
 
   const inputChangeHandler = (e) => {
-    if(e.target.id === undefined){
-      console.log(e.target);
-      
-    
-      const { name, value } = e.target;
-      setGender(e.target.value);
-      console.log(gender);
-      setFormData((formData) => ({ ...formData, [name]: value }));
-    
-      console.log(formData);
-    } else {
-      const { id, value } = e.target;
-      setFormData((formData) => ({ ...formData, [id]: value }));
-      console.log(formData);
-    }
-    
-    
-    
+    const { id, value } = e.target;
+    setFormData((formData) => ({ ...formData, [id]: value }));
   };
 
-  const submitHandler = (data) => {
+  const submitHandler = () => {
     // setNewUserData(JSON.stringify(data));
+    console.log(seletedRow);
+    const checkData = checkProperties(formData);
+    setOpen(null);
+    if (checkData) {
+      setShowSnack(false);
+      if (Object.keys(seletedRow).length === 0) {
+        const obj = { ...formData };
+        obj.about = gender;
+        obj.companyid = JSON.stringify(Math.floor(Math.random() * 9000000000) + 1000000000);
+        setFormData({ ...obj });
+        createNewUser(obj);
+      } else {
+        editUser(formData);
+      }
+    } else {
+      setShowSnack(true);
+    }
   };
 
-  const handleGenderChange = (event) => {
-    setGender(event.target.value);
-  };
+  function checkProperties(obj) {
+    let checkval;
+    if (Object.values(obj).length <= 9 && !Object.values(obj).includes('')) {
+      checkval = true;
+    }
+
+    return checkval;
+  }
+  async function createNewUser(body) {
+    try {
+      const response = await Axios.post('http://localhost:5000/adduser', body, { headers: authHeader() });
+
+      if (response.status === 200) {
+        setNewUserDialog(false);
+        getUsers();
+        console.log('sucess');
+      }
+    } catch (error) {
+      console.log('in catch block');
+    }
+  }
+
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - userDetail.length) : 0;
 
   const filteredUsers = applySortFilter(userDetail, getComparator(order, orderBy), filterName);
@@ -230,7 +315,7 @@ export default function UserPage() {
   return (
     <>
       <Helmet>
-        <title> User | Minimal UI </title>
+        <title> User </title>
       </Helmet>
 
       <Container>
@@ -241,14 +326,18 @@ export default function UserPage() {
           <Button
             variant="contained"
             startIcon={<Iconify icon="eva:plus-fill" />}
-            onClick={() =>{setNewUserDialog(true); setFormData({}); setGender('')} }
+            onClick={() => {
+              setNewUserDialog(true);
+              setFormData({});
+              setGender('');
+            }}
           >
             New User
           </Button>
         </Stack>
 
         <Card>
-          <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
+          <UserListToolbar onMultipleDelete={handleMultipleDelete} numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
 
           <Scrollbar>
             <TableContainer sx={{ minWidth: 800 }}>
@@ -264,42 +353,76 @@ export default function UserPage() {
                 />
                 <TableBody>
                   {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => {
-                    const { companyid, firstname, lastname, companyname, role, experience, about, mobile, email } = row;
+                    const { _id, companyid, firstname, lastname, companyname, role, experience, about, mobile, email } =
+                      row;
                     const selectedUser = selected.indexOf(companyid) !== -1;
 
                     return (
-                      <TableRow hover key={index} tabIndex={-1} role="checkbox" selected={selectedUser}>
-                        <TableCell padding="checkbox">
-                          <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, companyid)} />
-                        </TableCell>
+                      <>
+                        <TableRow hover key={index} tabIndex={-1} role="checkbox" selected={selectedUser}>
+                          <TableCell padding="checkbox">
+                            <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, companyid, _id)} />
+                          </TableCell>
 
-                        <TableCell component="th" scope="row" padding="none">
-                          <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar alt={companyid} src={USERLIST[index].avatarUrl} />
-                            <Typography variant="subtitle2" noWrap>
-                              {companyid}
-                            </Typography>
-                          </Stack>
-                        </TableCell>
+                          <TableCell component="th" scope="row" padding="none">
+                            <Stack direction="row" alignItems="center" spacing={2}>
+                              <Avatar alt={companyid} src={USERLIST[index].avatarUrl} />
+                              <Typography variant="subtitle2" noWrap>
+                                {companyid}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
 
-                        <TableCell align="left">{firstname}</TableCell>
+                          <TableCell align="left">{firstname}</TableCell>
 
-                        <TableCell align="left">{lastname}</TableCell>
+                          <TableCell align="left">{lastname}</TableCell>
 
-                        <TableCell align="left">{companyname}</TableCell>
+                          <TableCell align="left">{companyname}</TableCell>
 
-                        <TableCell align="left">{role}</TableCell>
-                        <TableCell align="left">{experience}</TableCell>
-                        <TableCell align="left">{about}</TableCell>
-                        <TableCell align="left">{mobile}</TableCell>
-                        <TableCell align="left">{email}</TableCell>
+                          <TableCell align="left">{role}</TableCell>
+                          <TableCell align="left">{experience}</TableCell>
+                          <TableCell align="left">{about}</TableCell>
+                          <TableCell align="left">{mobile}</TableCell>
+                          <TableCell align="left">{email}</TableCell>
 
-                        <TableCell align="right" style={{ paddingLeft: '0px !important' }}>
-                          <IconButton size="large" color="inherit" onClick={handleOpenMenu}>
+                          <TableCell align="right" style={{ paddingLeft: '0px !important' }}>
+                            <IconButton size="large" color="inherit" onClick={handleOpenMenu(row)}>
+                              <Iconify icon={'eva:more-vertical-fill'} />
+                            </IconButton>
+                            {/* <Button onClick={checkRow(_id, index)}>
                             <Iconify icon={'eva:more-vertical-fill'} />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
+                            </Button> */}
+                          </TableCell>
+                        </TableRow>
+                        {/* <Menu
+                          open={Boolean(open)}
+                          anchorEl={open}
+                          onClose={handleCloseMenu}
+                          anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+                          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                          PaperProps={{
+                            sx: {
+                              p: 1,
+                              width: 140,
+                              '& .MuiMenuItem-root': {
+                                px: 1,
+                                typography: 'body2',
+                                borderRadius: 0.75,
+                              },
+                            },
+                          }}
+                        >
+                          <MenuItem>
+                            <Iconify icon={'eva:edit-fill'} sx={{ mr: 2 }} />
+                            Edit
+                          </MenuItem>
+
+                          <MenuItem sx={{ color: 'error.main' }} key={index} onClick={handleUserDelete(row)}>
+                            <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
+                            Delete
+                          </MenuItem>
+                        </Menu> */}
+                      </>
                     );
                   })}
                   {emptyRows > 0 && (
@@ -366,21 +489,30 @@ export default function UserPage() {
           },
         }}
       >
-        <MenuItem>
+        <MenuItem onClick={handleUserEdit}>
           <Iconify icon={'eva:edit-fill'} sx={{ mr: 2 }} />
           Edit
         </MenuItem>
 
-        <MenuItem sx={{ color: 'error.main' }}>
+        <MenuItem sx={{ color: 'error.main' }} onClick={handleUserDelete}>
           <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
           Delete
         </MenuItem>
       </Popover>
-
+      <Snackbar
+        open={showSnack}
+        autoHideDuration={3000}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        onClose={() => setShowSnack(false)}
+      >
+        <Alert onClose={handleClose} severity="warning" sx={{ width: '100%' }}>
+          All fields are mandatory!
+        </Alert>
+      </Snackbar>
       <Dialog open={newUserDialog} onClose={handleClose}>
         <DialogTitle>Add New User</DialogTitle>
         <DialogContent>
-          <form onSubmit={submitHandler}>
+          <form>
             <Grid container spacing={2}>
               <Grid item xs={6} md={6}>
                 <FormControl variant="standard">
@@ -459,14 +591,14 @@ export default function UserPage() {
                 </FormControl>
               </Grid>
               <Grid item xs={6} md={6}>
-                <FormControl variant="standard" sx={{ m: 1, minWidth: '88%' }}>
-                  <InputLabel id="demo-simple-select-standard-label">Gender*</InputLabel>
+                <FormControl variant="standard" sx={{ margin: '0px', minWidth: '77%' }}>
+                  <InputLabel id="about">Gender*</InputLabel>
                   <Select
-                    labelId="demo-simple-select-standard-label"
-                    id='about'
+                    labelId="about"
+                    id="about"
                     name="about"
                     value={gender}
-                    onChange={inputChangeHandler}
+                    onChange={(e) => setGender(e.target.value)}
                     label="Gender*"
                     variant="standard"
                   >
@@ -476,17 +608,19 @@ export default function UserPage() {
                 </FormControl>
               </Grid>
               <Grid item xs={6} md={6}>
-                <TextField
-                  autoFocus
-                  margin="dense"
-                  id="mobile"
-                  label="Mobile No.*"
-                  type="text"
-                  fullWidth
-                  variant="standard"
-                  value={formData.mobile}
-                  onChange={inputChangeHandler}
-                />
+                <FormControl variant="standard">
+                  <TextField
+                    autoFocus
+                    margin="dense"
+                    id="mobile"
+                    label="Mobile No.*"
+                    type="text"
+                    fullWidth
+                    variant="standard"
+                    value={formData.mobile}
+                    onChange={inputChangeHandler}
+                  />
+                </FormControl>
               </Grid>
               <Grid item xs={6} md={6}>
                 <FormControl variant="standard">
@@ -508,7 +642,9 @@ export default function UserPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button type="submit">Save User</Button>
+          <Button type="submit" onClick={submitHandler}>
+            Save User
+          </Button>
         </DialogActions>
       </Dialog>
     </>

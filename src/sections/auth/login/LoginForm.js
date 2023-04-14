@@ -31,7 +31,7 @@ const [showPassword, setShowPassword] = useState(false);
           const response = await Axios.post('http://localhost:5000/login', {'email': email, 'password': password});
          
         if(response.status === 200){
-          sessionStorage.setItem('userData',JSON.stringify(response.data.data.email));
+          sessionStorage.setItem('userData',JSON.stringify(response.data));
           const userName = response.data.data.email.split("@", 1);
           sessionStorage.setItem('username',userName[0]);
           navigate('/dashboard/app', { replace: true });
